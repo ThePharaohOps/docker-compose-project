@@ -1,12 +1,34 @@
-db:
-  image: mariadb
-  environment:
-    - MYSQL_ROOT_PASSWORD=mypassword
-wordpress:
-  image: wordpress 
-  links:
-    - db:mysql
-  environment:
-    - VIRTUAL_HOST=wp.domain.com 
-    - LETSENCRYPT_HOST=wp.domain.com 
-    - LETSENCRYPT_EMAIL=toto@yopmail.fr
+services:
+  db:
+    image: mariadb:11
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=mypassword
+      - MYSQL_DATABASE=wordpress
+      - MYSQL_USER=wordpress
+      - MYSQL_PASSWORD=mypassword
+    volumes:
+      - ./db:/var/lib/mysql
+
+  wordpress:
+    image: wordpress:php8.3-apache
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      - WORDPRESS_DB_HOST=db
+      - WORDPRESS_DB_NAME=wordpress
+      - WORDPRESS_DB_USER=wordpress
+      - WORDPRESS_DB_PASSWORD=mypassword
+      - VIRTUAL_HOST=wp.domain.com
+      - LETSENCRYPT_HOST=wp.domain.com
+      - LETSENCRYPT_EMAIL=toto@yopmail.fr
+    volumes:
+      - ./wp-content:/var/www/html/wp-content
+    networks:
+      - default
+      - webproxy
+
+networks:
+  webproxy:
+    external: true

@@ -1,13 +1,40 @@
-netdata:
-  image: titpetric/netdata:latest 
-  ports: 
-    - "19999:19999"
-  cap_add: 
-    - SYS_PTRACE 
-  volumes: 
-    - /proc:/host/proc:ro 
-    - /sys:/host/sys:ro 
-  environment: 
-    - VIRTUAL_HOST=monit.domain.com 
-    - LETSENCRYPT_HOST=monit.domain.com 
-    - LETSENCRYPT_EMAIL=toto@yopmail.fr
+services:
+  netdata:
+    image: netdata/netdata:latest
+    container_name: netdata
+    restart: unless-stopped
+    hostname: netdata
+    ports:
+      - "19999:19999"
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    volumes:
+      - netdataconfig:/etc/netdata
+      - netdatalib:/var/lib/netdata
+      - netdatacache:/var/cache/netdata
+      - /etc/passwd:/host/etc/passwd:ro
+      - /etc/group:/host/etc/group:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /etc/os-release:/host/etc/os-release:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - VIRTUAL_HOST=monit.domain.com
+      - VIRTUAL_PORT=19999
+      - LETSENCRYPT_HOST=monit.domain.com
+      - LETSENCRYPT_EMAIL=toto@yopmail.fr
+    networks:
+      - default
+      - webproxy
+
+networks:
+  webproxy:
+    external: true
+
+volumes:
+  netdataconfig:
+  netdatalib:
+  netdatacache:

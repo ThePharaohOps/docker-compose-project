@@ -1,23 +1,41 @@
-mariadb:
-  image: mariadb
-  restart: always
-  environment:
-    - MYSQL_ROOT_PASSWORD=mypassword
-    - MYSQL_DATABASE=piwik
-    - MYSQL_USER=piwik
-    - MYSQL_PASSWORD=mypassword
-	- VIRTUAL_HOST=piwik.domain.com 
-    - LETSENCRYPT_HOST=piwik.domain.com 
-    - LETSENCRYPT_EMAIL=toto@yopmail.fr
-  volumes:
-    - ./database:/var/lib/mysql
+# Piwik a ete renomme Matomo en 2018, on utilise desormais l'image officielle.
 
-piwik:
-  image: harishneit/piwik:latest
-  restart: always
-  links:
-    - mariadb
-  ports:
-    - 127.0.0.1:4000:80
-  volumes:
-    - ./config:/var/www/html/piwik/config:rw
+services:
+  mariadb:
+    image: mariadb:11
+    container_name: matomo-mariadb
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=mypassword
+      - MYSQL_DATABASE=matomo
+      - MYSQL_USER=matomo
+      - MYSQL_PASSWORD=mypassword
+    volumes:
+      - ./database:/var/lib/mysql
+
+  matomo:
+    image: matomo:latest
+    container_name: matomo
+    restart: unless-stopped
+    depends_on:
+      - mariadb
+    environment:
+      - MATOMO_DATABASE_HOST=mariadb
+      - MATOMO_DATABASE_ADAPTER=mysql
+      - MATOMO_DATABASE_TABLES_PREFIX=matomo_
+      - MATOMO_DATABASE_USERNAME=matomo
+      - MATOMO_DATABASE_PASSWORD=mypassword
+      - MATOMO_DATABASE_DBNAME=matomo
+      - VIRTUAL_HOST=piwik.domain.com
+      - LETSENCRYPT_HOST=piwik.domain.com
+      - LETSENCRYPT_EMAIL=toto@yopmail.fr
+    volumes:
+      - ./config:/var/www/html/config:rw
+      - ./data:/var/www/html/misc/user
+    networks:
+      - default
+      - webproxy
+
+networks:
+  webproxy:
+    external: true

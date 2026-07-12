@@ -1,38 +1,39 @@
-nextcloud:
-  image: wonderfall/nextcloud
-  links:
-    - nextcloud-db:nextcloud-db  
-  environment:
-    - UID=1000
-    - GID=1000
-    - UPLOAD_MAX_SIZE=10G
-    - APC_SHM_SIZE=128M
-    - OPCACHE_MEM_SIZE=128
-    - CRON_PERIOD=15m
-    - TZ=Europe/Paris
-    - ADMIN_USER=admin            
-    - ADMIN_PASSWORD=admin        
-    - DOMAIN=localhost
-    - DB_TYPE=mysql
-    - DB_NAME=nextcloud
-    - DB_USER=nextcloud
-    - DB_PASSWORD=mypassword
-    - DB_HOST=nextcloud-db
-	  - VIRTUAL_HOST=nextcloud.domain.com 
-    - LETSENCRYPT_HOST=nextcloud.domain.com 
-    - LETSENCRYPT_EMAIL=toto@yopmail.fr
-  volumes:
-    - ./data:/data
-    - ./config:/config
-    - ./apps:/apps2
-    - ./themes:/nextcloud/themes
+services:
+  nextcloud:
+    image: nextcloud:29-apache
+    restart: unless-stopped
+    depends_on:
+      - nextcloud-db
+    environment:
+      - MYSQL_HOST=nextcloud-db
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=mypassword
+      - NEXTCLOUD_ADMIN_USER=admin
+      - NEXTCLOUD_ADMIN_PASSWORD=changeme
+      - NEXTCLOUD_TRUSTED_DOMAINS=nextcloud.domain.com
+      - TZ=Europe/Paris
+      - VIRTUAL_HOST=nextcloud.domain.com
+      - LETSENCRYPT_HOST=nextcloud.domain.com
+      - LETSENCRYPT_EMAIL=toto@yopmail.fr
+    volumes:
+      - ./data:/var/www/html
+    networks:
+      - default
+      - webproxy
 
-nextcloud-db:
-  image: mariadb:latest
-  volumes:
-    - ./db:/var/lib/mysql
-  environment:
-    - MYSQL_ROOT_PASSWORD=mypassword
-    - MYSQL_DATABASE=nextcloud
-    - MYSQL_USER=nextcloud
-    - MYSQL_PASSWORD=mypassword
+  nextcloud-db:
+    image: mariadb:11
+    restart: unless-stopped
+    command: --transaction-isolation=READ-COMMITTED
+    volumes:
+      - ./db:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=mypassword
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=mypassword
+
+networks:
+  webproxy:
+    external: true

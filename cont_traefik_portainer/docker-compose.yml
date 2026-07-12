@@ -1,41 +1,52 @@
-version: '3'
+# Migre de Traefik v1 (syntaxe --web/--docker, labels traefik.frontend.*)
+# vers Traefik v3 (providers.docker, routers/services, labels traefik.http.*).
+# Reseau externe "int" a creer une seule fois: docker network create int
 
 services:
-    
   traefik:
-    image: traefik:latest
-    command: --web --web.address=:8080 --docker --docker.domain=docker.localhost --docker.watch --logLevel=DEBUG \
-            --entryPoints='Name:http Address::80' --defaultEntryPoints='http' --accessLogsFile='log/access.log'
+    image: traefik:v3.1
     hostname: traefik
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --api.dashboard=true
+      # A retirer/securiser (basicauth) avant une mise en prod publique
+      - --api.insecure=true
+      - --log.level=INFO
+      - --accesslog=true
     ports:
-      - 8080:8080
-      - 80:80
+      - "8080:8080"
+      - "80:80"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /dev/null:/traefik.toml
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     labels:
-      - "traefik.backend=traefik"
-      - "traefik.frontend.rule=Host:dockerpoc.domain.org"
-      - "traefik.backend.port=8080"
-      - "traefik.frontend.entryPoints=http"
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`dockerpoc.domain.org`) && PathPrefix(`/traefik`)"
+      - "traefik.http.routers.traefik.entrypoints=web"
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
     networks:
-      - int 
+      - int
 
   portainer:
-    image: portainer/portainer
+    image: portainer/portainer-ce:latest
     hostname: portainer
-    volumes: 
+    restart: unless-stopped
+    command: -H unix:///var/run/docker.sock
+    volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./data:/data
     labels:
-      - "traefik.backend=portainer"
-      - "traefik.frontend.rule=Host:dockerpoc.domain.org;PathPrefixStrip:/portainer"
-      - "traefik.backend.port=9000"
-      - "traefik.frontend.entryPoints=http" 
+      - "traefik.enable=true"
+      - "traefik.http.routers.portainer.rule=Host(`dockerpoc.domain.org`) && PathPrefix(`/portainer`)"
+      - "traefik.http.routers.portainer.entrypoints=web"
+      - "traefik.http.middlewares.portainer-stripprefix.stripprefix.prefixes=/portainer"
+      - "traefik.http.routers.portainer.middlewares=portainer-stripprefix"
+      - "traefik.http.services.portainer.loadbalancer.server.port=9000"
     networks:
       - int
 
 networks:
   int:
-    external:
-     name: int
+    external: true

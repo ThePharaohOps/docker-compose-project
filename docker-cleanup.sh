@@ -1,6 +1,11 @@
-# Install for cleanup docker files: untagged containers and images
-cd /tmp
-git clone https://gist.github.com/76b450a0c986e576e98b.git
-cd 76b450a0c986e576e98b
-sudo mv docker-cleanup /usr/local/bin/docker-cleanup
-sudo chmod +x /usr/local/bin/docker-cleanup
+#!/bin/sh
+# Nettoie les images, conteneurs, reseaux et caches de build Docker non utilises.
+# Remplace l'ancien script tiers (gist wdullaer/docker-cleanup, obsolete depuis
+# que `docker system prune` fait la meme chose nativement).
+
+set -e
+
+docker system prune -f
+
+# Ajouter -a pour supprimer aussi toutes les images sans conteneur associe:
+# docker system prune -af

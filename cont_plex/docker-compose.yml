@@ -1,23 +1,50 @@
-plex:
+services:
+  plex:
+    image: lscr.io/linuxserver/plex:latest
     container_name: plex
-    image: timhaak/plex
+    restart: unless-stopped
     ports:
-        - "32400:32400"
-    volumes:
-        - /etc/localtime:/etc/localtime:ro
-        - ./data/config:/config
-        - ./data/data:/data
+      - "32400:32400"
     environment:
-        - PLEX_USERNAME=username
-        - PLEX_PASSWORD=password
-        - PLEX_TOKEN=token
-        - VIRTUAL_HOST=plex.domain.com 
-        - LETSENCRYPT_HOST=plex.domain.com 
-        - LETSENCRYPT_EMAIL=toto@yopmail.fr
-plexpy:
-    container_name: "plexpy"
-    image: dbarton/plexpy
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Paris
+      - PLEX_CLAIM=claim-xxxxxxxxxxxxxxxxxxxx
+      - VIRTUAL_HOST=plex.domain.com
+      - VIRTUAL_PORT=32400
+      - LETSENCRYPT_HOST=plex.domain.com
+      - LETSENCRYPT_EMAIL=toto@yopmail.fr
     volumes:
-        - ./data/data:/datadir
+      - /etc/localtime:/etc/localtime:ro
+      - ./data/config:/config
+      - ./data/media:/data
+    networks:
+      - default
+      - webproxy
+
+  tautulli:
+    image: lscr.io/linuxserver/tautulli:latest
+    container_name: tautulli
+    restart: unless-stopped
+    depends_on:
+      - plex
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Paris
+      - VIRTUAL_HOST=plexpy.domain.com
+      - VIRTUAL_PORT=8181
+      - LETSENCRYPT_HOST=plexpy.domain.com
+      - LETSENCRYPT_EMAIL=toto@yopmail.fr
+    volumes:
+      - ./data/tautulli:/config
+      - ./data/media:/data
     ports:
-        - "8181:8181"
+      - "8181:8181"
+    networks:
+      - default
+      - webproxy
+
+networks:
+  webproxy:
+    external: true

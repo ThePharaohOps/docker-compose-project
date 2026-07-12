@@ -1,17 +1,22 @@
-logs:
-  image: gerchardon/docker-logio
-  links:
-   - logio:logio
-  volumes:
-   - /var/run/docker.sock:/var/run/docker.sock
-  command: -h logio -n docker
-  privileged: true
-logio:
-  image: temal/logio-server
-  ports:
-   - 28777:28777
-   - 28778:28778
-   environment:
-   - VIRTUAL_HOST=logs.domain.com 
-   - LETSENCRYPT_HOST=logs.domain.com 
-   - LETSENCRYPT_EMAIL=toto@yopmail.fr
+# log.io est abandonne depuis ~2014, remplace par Dozzle
+# (visualisation des logs Docker en temps reel, mono-conteneur, activement maintenu)
+
+services:
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - VIRTUAL_HOST=logs.domain.com
+      - VIRTUAL_PORT=8080
+      - LETSENCRYPT_HOST=logs.domain.com
+      - LETSENCRYPT_EMAIL=toto@yopmail.fr
+    networks:
+      - default
+      - webproxy
+
+networks:
+  webproxy:
+    external: true

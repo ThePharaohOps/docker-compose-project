@@ -1,10 +1,29 @@
-rancher-server: 
-  image: rancher/server:latest 
-  ports:
-    - "8080:8080" 
-  environment: 
-    - VIRTUAL_HOST=admin.domain.com 
-    - LETSENCRYPT_HOST=admin.domain.com 
-    - LETSENCRYPT_EMAIL=toto@yopmail.fr
-  volumes:  
-    - '/home/docker/rancher-server/mysql:/var/lib/mysql:rw'
+# Rancher 1.x est en fin de vie depuis 2020 et incompatible avec Docker recent.
+# Remplace par Portainer CE, l'UI d'administration Docker la plus repandue et maintenue.
+
+services:
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    command: -H unix:///var/run/docker.sock
+    ports:
+      - "8000:8000"
+    environment:
+      - VIRTUAL_HOST=admin.domain.com
+      - VIRTUAL_PORT=9000
+      - LETSENCRYPT_HOST=admin.domain.com
+      - LETSENCRYPT_EMAIL=toto@yopmail.fr
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    networks:
+      - default
+      - webproxy
+
+networks:
+  webproxy:
+    external: true
+
+volumes:
+  portainer_data:

@@ -1,11 +1,26 @@
-rutorrent:
-  image: wonderfall/rtorrent-flood
-  environment:
-    - FLOOD_SECRET=mysupersecretkey
-    - VIRTUAL_HOST=rtorrent.domain.com
-    - LETSENCRYPT_HOST=rtorrent.domain.com
-    - LETSENCRYPT_EMAIL=toto@yopmail.fr
-    - "3000:3000"
-    - "49184:49184"
-  volumes:
-    - /srv/docker/cont_rtorrent/torrents:/data
+services:
+  rutorrent:
+    image: lscr.io/linuxserver/rutorrent:latest
+    container_name: rutorrent
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Paris
+      - VIRTUAL_HOST=rtorrent.domain.com
+      - VIRTUAL_PORT=80
+      - LETSENCRYPT_HOST=rtorrent.domain.com
+      - LETSENCRYPT_EMAIL=toto@yopmail.fr
+    ports:
+      - "3000:3000"
+      - "49184:49184"
+    volumes:
+      - ./config:/config
+      - ./torrents:/data/downloads
+    networks:
+      - default
+      - webproxy
+
+networks:
+  webproxy:
+    external: true
